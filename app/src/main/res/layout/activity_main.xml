@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+        android:id="@+id/drawerLayout"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+
+    <!--메인 레이아웃-->
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="match_parent">
+
+        <com.mtsealove.github.iot.Design.HeadView
+                android:id="@+id/headView"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:layout_below="@id/headView"
+                      android:layout_marginHorizontal="20dp"
+                      android:orientation="vertical"
+                      android:layout_marginTop="20dp">
+            //현재 위치
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:text="현재 위치"
+                      android:textColor="@color/black"
+                      android:textSize="24sp"/>
+
+            <androidx.cardview.widget.CardView
+                    android:layout_marginTop="10dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                              android:gravity="center_vertical"
+                              android:orientation="horizontal">
+                    <ProgressBar android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                 android:id="@+id/locationPb"/>
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                              android:padding="10dp"
+                              android:textSize="18sp"
+                              android:id="@+id/locationTv"
+                              android:textColor="@color/black"
+                              android:text="위치 정보를 불러오는 중입니다"/>
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!--현재 상태-->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:layout_marginTop="15dp"
+                      android:textColor="@color/black"
+                      android:text="현재 상태"
+                      android:textSize="24sp"/>
+
+            <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content"
+                                               android:layout_marginTop="10dp"
+                                               app:cardElevation="6dp">
+
+                        <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                            <ImageView android:layout_width="80dp" android:layout_height="80dp"
+                                       android:layout_margin="5dp"
+                                       android:id="@+id/statusIv"
+                                       android:src="@drawable/icon_delivery" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                      android:layout_marginTop="30dp"
+                                      android:layout_toRightOf="@id/statusIv"
+                                      android:layout_marginLeft="10dp"
+                                      android:text="화물 상차중"
+                                      android:id="@+id/status_kr_tv"
+                                      android:textSize="24sp"
+                                      android:textColor="#7F7F7F"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                      android:textColor="@color/blue_light"
+                                      android:layout_below="@id/statusIv"
+                                      android:layout_toRightOf="@id/statusIv"
+                                      android:textSize="18sp"
+                                      android:layout_marginLeft="10dp"
+                                      android:layout_marginTop="-10dp"
+                                      android:layout_marginBottom="5dp"
+                                      android:id="@+id/statusTv"
+                                      android:text="215개 중 38개 완료"/>
+                        </RelativeLayout>
+
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+        <!--버튼 배치-->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:layout_marginHorizontal="20dp"
+                      android:layout_marginBottom="20dp"
+                      android:layout_alignParentBottom="true"
+                      android:orientation="vertical">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:orientation="horizontal">
+                <Button android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        style="?android:attr/borderlessButtonStyle"
+                        android:id="@+id/checkListBtn"
+                        android:paddingVertical="15dp"
+                        android:textColor="@color/white"
+                        android:textSize="20sp"
+                        android:background="@drawable/button_background"
+                        android:layout_marginRight="10dp"
+                        android:text="화물 목록 확인"/>
+
+                <Button android:layout_width="match_parent" android:layout_height="wrap_content"
+                        style="?android:attr/borderlessButtonStyle"
+                        android:id="@+id/RfidBtn"
+                        android:layout_marginLeft="10dp"
+                        android:textColor="@color/white"
+                        android:paddingVertical="15dp"
+                        android:textSize="20sp"
+                        android:layout_weight="1"
+                        android:background="@drawable/button_background"
+                        android:text="RFID 태그"/>
+            </LinearLayout>
+
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:id="@+id/setStatusBtn"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/button_background_red"
+                    android:textSize="20sp"
+                    android:textColor="@color/white"
+                    android:text="배송 상태 변경"/>
+        </LinearLayout>
+
+    </RelativeLayout>
+
+<com.mtsealove.github.iot.Design.SlideView android:layout_width="300dp" android:layout_height="match_parent"
+                                           android:layout_gravity="start"
+android:id="@+id/slideView">
+
+</com.mtsealove.github.iot.Design.SlideView>
+
+</androidx.drawerlayout.widget.DrawerLayout>

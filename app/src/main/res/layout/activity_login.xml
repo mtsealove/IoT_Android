@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        tools:context=".LoginActivity">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:gravity="center_horizontal"
+                  android:layout_centerInParent="true">
+        <ImageView android:layout_width="60dp" android:layout_height="60dp"
+                   android:id="@+id/logoIv"
+                   android:src="@drawable/app_logo"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_marginTop="10dp"
+                  android:textColor="@color/black"
+                  android:textSize="20sp"
+                  android:textStyle="bold"
+                  android:text="IoT 물류추적 서비스"/>
+
+        <!--로그인 폼-->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:layout_marginTop="40dp"
+                      android:orientation="vertical"
+                      android:layout_marginHorizontal="50dp"
+                      >
+            <EditText android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:hint="Email"
+                      android:id="@+id/IdEt"
+                      android:textColorHint="@color/hint_gray"
+                      android:textColor="@color/black"
+                      android:background="@drawable/edit_background"
+                      android:paddingVertical="10dp"
+                      android:inputType="textEmailAddress"
+                      android:paddingLeft="15dp"
+                      android:textSize="18sp" />
+
+            <EditText android:layout_width="match_parent"  android:layout_height="wrap_content"
+                      android:id="@+id/PwEt"
+                      android:layout_marginTop="10dp"
+                      android:hint="Password"
+                      android:inputType="textPassword"
+                      android:textColorHint="@color/hint_gray"
+                      android:textColor="@color/black"
+                      android:background="@drawable/edit_background"
+                      android:paddingVertical="10dp"
+                      android:paddingLeft="15dp"
+                      android:textSize="18sp" />
+
+            <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/keepCb"
+                      android:layout_marginTop="10dp"
+                      android:text="로그인 유지" />
+
+            <Button android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:id="@+id/loginBtn"
+                    android:layout_marginTop="10dp"
+                    android:textColor="@color/white"
+                    android:background="@drawable/button_background"
+                    android:text="로그인"
+                    android:textSize="18sp" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

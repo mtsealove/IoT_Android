@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--슬라이드 메뉴 레이아웃-->
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="300dp" android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/white"
+        android:orientation="vertical">
+    <View android:layout_width="1dp" android:layout_height="match_parent"
+          android:background="@color/light_gray"
+          android:layout_alignParentRight="true"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:gravity="center_horizontal"
+                  android:orientation="vertical">
+        <ImageView android:layout_width="60dp" android:layout_height="60dp"
+                   android:layout_marginTop="50dp"
+                   android:src="@drawable/app_logo"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:layout_marginTop="20dp"
+                  android:text="IoT"
+                  android:textSize="24sp"
+                  android:textColor="@color/black"
+                  android:textStyle="bold"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:text="물류추적 서비스"
+                  android:textColor="@color/black"
+                  android:textSize="23sp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:background="@drawable/edit_background"
+                      android:layout_marginHorizontal="20dp"
+                      android:layout_marginTop="20dp"
+                      android:orientation="vertical">
+            <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp">
+                <ImageView android:layout_width="40dp" android:layout_height="40dp"
+                           android:src="@drawable/member_icon"
+                           android:layout_marginLeft="20dp"
+                           android:layout_centerVertical="true"
+                           android:id="@+id/memberIcon"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:layout_centerVertical="true"
+                          android:id="@+id/driverNameTv"
+                          android:text="이기현"
+                          android:layout_toRightOf="@id/memberIcon"
+                          android:textSize="20sp"
+                          android:textColor="@color/black"
+                          android:layout_marginLeft="10dp"
+                          android:textStyle="bold"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:layout_centerVertical="true"
+                          android:text="기사님"
+                          android:layout_toRightOf="@id/driverNameTv"
+                          android:textSize="20sp"
+                          android:textColor="@color/blue_light"
+                          android:layout_marginLeft="10dp"
+                          android:textStyle="bold"/>
+            </RelativeLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:text="로그아웃"
+                      android:id="@+id/logoutTv"
+                      android:textSize="18sp"
+                      android:layout_gravity="right"
+                      android:layout_margin="10dp"
+                      android:textColor="@color/red_light"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

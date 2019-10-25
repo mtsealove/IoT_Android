@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView android:layout_width="match_parent"
+                                   android:layout_height="wrap_content"
+                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                   android:layout_marginTop="10dp"
+                                   app:cardElevation="6dp"
+                                   xmlns:android="http://schemas.android.com/apk/res/android">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                      android:paddingHorizontal="20dp"
+                      android:paddingVertical="10dp"
+                      android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/nameTv"
+                      android:textSize="16sp"
+                      android:textColor="@color/black"
+                      android:text="상품명: " />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/invoiceTv"
+                      android:textSize="16sp"
+                      android:textColor="@color/black"
+                      android:text="송장번호: " />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/statusTv"
+                      android:textSize="16sp"
+                      android:textColor="@color/black"
+                      android:text="상태: " />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/stAddrTv"
+                      android:textSize="16sp"
+                      android:textColor="@color/black"
+                      android:text="출발 주소:: " />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                      android:id="@+id/dstAddrTv"
+                      android:textSize="16sp"
+                      android:textColor="@color/black"
+                      android:text="도착 주소: " />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
