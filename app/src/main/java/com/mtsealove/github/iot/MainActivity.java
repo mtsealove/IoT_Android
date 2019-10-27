@@ -83,8 +83,10 @@ public class MainActivity extends AppCompatActivity {
         StartService();
     }
 
+    Intent RfidIntent;
     //위치 정보 확인하기
     private void GetLocation() {
+        RfidIntent=new Intent(this, RfidActivity.class);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -107,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
                 if (addresses != null && addresses.size() != 0) {
                     String addr = addresses.get(0).getAddressLine(0);
                     addr.replace("대한민국 ", "");
+                    RfidIntent.putExtra("address", addr);
                     locationPb.setVisibility(View.GONE);
                     locationTv.setText(addr);
                 }
@@ -199,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<AItemList> call, Throwable t) {
                 Log.e(tag, "화물 데이터 받기 실패");
-                progressDialog.dismiss();
+                //progressDialog.dismiss();
             }
         });
     }

@@ -20,6 +20,7 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
             android:usesCleartextTraffic="true">
+        <activity android:name="app.akexorcist.bluetoothspp.DeviceList" />
         <activity android:name=".RfidActivity">
         </activity>
         <activity android:name=".SetIpActivity">

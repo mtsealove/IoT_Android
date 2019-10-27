@@ -28,4 +28,7 @@ public interface RetrofitService {
 
     @GET("/Get/Status/Done")
     Call<RestResult> GetStatusDone(@Query("driver_id") String driver_id, @Query("status") int status);
+
+    @POST("/Update/TimeLine")
+    Call<RestResult> UpdateTimeline(@Body RequestTimeLine requestTimeLine);
 }
