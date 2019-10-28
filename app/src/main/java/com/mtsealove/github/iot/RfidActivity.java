@@ -1,14 +1,8 @@
 package com.mtsealove.github.iot;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
@@ -18,30 +12,26 @@ import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.mtsealove.github.iot.Database.*;
 import com.mtsealove.github.iot.Design.AItemView;
 import com.mtsealove.github.iot.Design.SystemUiTuner;
-import org.altbeacon.beacon.*;
+
+import me.aflak.bluetooth.Bluetooth;
+import me.aflak.bluetooth.interfaces.BluetoothCallback;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import javax.security.auth.login.LoginException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
-public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
+public class RfidActivity extends AppCompatActivity {
     public static DrawerLayout drawerLayout;
     AItemView aItemView;
     String tag = getClass().getSimpleName();
@@ -52,20 +42,12 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
     TextView titleTv, messageTv;
 
     //블루투스 관련
-    private static final int REQUEST_ENABLE_BT = 3;
-    public BluetoothAdapter mBluetoothAdapter = null;
-    Set<BluetoothDevice> mDevices;
-    int mPairedDeviceCount;
-    BluetoothDevice mRemoteDevice;
-    BluetoothSocket mSocket;
-    InputStream mInputStream;
-    OutputStream mOutputStream;
-    Thread mWorkerThread;
-    int readBufferPositon;      //버퍼 내 수신 문자 저장 위치
-    byte[] readBuffer;      //수신 버퍼
-    byte mDelimiter = 10;
+    Bluetooth bluetooth;
 
-    private BeaconManager beaconManager;
+    private static final int REQUEST_ENABLE_BT = 1;
+    // Stops scanning after 10 seconds.
+    private static final long SCAN_PERIOD = 10000;
+
 
     //위치정보 관련
     Location location;
@@ -74,7 +56,7 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
     String Address;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rfid);
         drawerLayout = findViewById(R.id.drawerLayout);
@@ -92,9 +74,23 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
         account = (Account) getIntent().getSerializableExtra("account");
         GetLocation();
 
-        SetStatusView("123456789012");
+        messageIv.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                SetStatusView("123456789012");
+                return false;
+            }
+        });
 
+        /*
+        bluetooth = new Bluetooth(this);
+        bluetooth.setBluetoothCallback(bluetoothCallback);
+//        bluetooth.startScanning();
+        //List<BluetoothDevice> devices = bluetooth.getPairedDevices();
 
+//        bluetooth.connectToName("TEST");
+        bluetooth.send(new byte[]{61, 62, 63});
+         */
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -108,13 +104,32 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
             }
         });
 
-        beaconManager = BeaconManager.getInstanceForApplication(this);
-
-        // ibeacon layout
-        beaconManager.getBeaconParsers().add(new BeaconParser().
-                setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
-        beaconManager.bind(this);
     }
+
+    private BluetoothCallback bluetoothCallback = new BluetoothCallback() {
+        @Override
+        public void onBluetoothTurningOn() {
+        }
+
+        @Override
+        public void onBluetoothTurningOff() {
+        }
+
+        @Override
+        public void onBluetoothOff() {
+        }
+
+        @Override
+        public void onBluetoothOn() {
+            // doStuffWhenBluetoothOn() ...
+
+        }
+
+        @Override
+        public void onUserDeniedActivation() {
+            // handle activation denial...
+        }
+    };
 
     public static void OpenDrawer() {
         if (!drawerLayout.isDrawerOpen(GravityCompat.START))
@@ -143,7 +158,7 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
             if (addresses != null && addresses.size() != 0) {
                 String addr = addresses.get(0).getAddressLine(0);
                 addr.replace("대한민국 ", "");
-                Address=addr;
+                Address = addr;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -208,7 +223,7 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
         });
 
         //위치정보를 가지고 있을 때만 수행
-        if(Address!=null) {
+        if (Address != null) {
             Call<RestResult> call1 = restApi.getRetrofitService().UpdateTimeline(new RequestTimeLine(invoice, Address, status));
             call1.enqueue(new Callback<RestResult>() {
                 @Override
@@ -307,6 +322,7 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
         startActivity(intent);
         ActivityCompat.finishAffinity(this);
     }
+
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -317,32 +333,27 @@ public class RfidActivity extends AppCompatActivity implements BeaconConsumer {
     }
 
     @Override
-    public void onBeaconServiceConnect() {
-        beaconManager.addMonitorNotifier(new MonitorNotifier() {
-            @Override
-            public void didEnterRegion(Region region) {
-                Log.i(tag, "I just saw an beacon for the first time!");
-            }
-
-            @Override
-            public void didExitRegion(Region region) {
-                Log.i(tag, "I no longer see an beacon");
-            }
-
-            @Override
-            public void didDetermineStateForRegion(int state, Region region) {
-                Log.i(tag, "I have just switched from seeing/not seeing beacons: "+state);
-            }
-        });
-
-        try {
-            beaconManager.startMonitoringBeaconsInRegion(new Region("myMonitoringUniqueId", null, null, null));
-        } catch (RemoteException ignored) {    }
+    protected void onStart() {
+        super.onStart();
+        /*
+        bluetooth.onStart();
+        if (bluetooth.isEnabled()) {
+            // doStuffWhenBluetoothOn() ...
+        } else {
+            bluetooth.showEnableDialog(RfidActivity.this);
+        }
+         */
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        beaconManager.unbind(this);
+    protected void onStop() {
+        super.onStop();
+        //bluetooth.onStop();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        //bluetooth.onActivityResult(requestCode, resultCode);
     }
 }

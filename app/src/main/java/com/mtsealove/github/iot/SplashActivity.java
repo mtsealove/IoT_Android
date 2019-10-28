@@ -12,7 +12,6 @@ import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 import com.mtsealove.github.iot.Database.IpDbHelper;
 import com.mtsealove.github.iot.Design.SystemUiTuner;
-import retrofit2.http.POST;
 
 import java.util.List;
 

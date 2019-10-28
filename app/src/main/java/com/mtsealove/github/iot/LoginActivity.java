@@ -4,8 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.media.Image;
-import android.os.Build;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
