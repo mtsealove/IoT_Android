@@ -2,8 +2,13 @@ package com.mtsealove.github.iot;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.location.*;
@@ -12,6 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.view.GravityCompat;
@@ -29,7 +35,11 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public class RfidActivity extends AppCompatActivity {
     public static DrawerLayout drawerLayout;
@@ -41,12 +51,24 @@ public class RfidActivity extends AppCompatActivity {
     ImageView messageIv;
     TextView titleTv, messageTv;
 
+    ProgressDialog bluetoothDialog;
+
     //블루투스 관련
-    Bluetooth bluetooth;
+    SharedPreferences sharedPreferences;
+    ConnectedTask mConnectedTask = null;
+    static BluetoothAdapter mBluetoothAdapter;
+    private String mConnectedDeviceName = null;
+    private ArrayAdapter<String> mConversationArrayAdapter;
+    static boolean isConnectionError = false;
+    private static final String TAG = "BluetoothClient";
+    int temp_power = 0;
+    int initial_power = 1;
+    int pulling_power=0;
 
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
+    private final int REQUEST_BLUETOOTH_ENABLE = 100;
 
 
     //위치정보 관련
@@ -78,6 +100,7 @@ public class RfidActivity extends AppCompatActivity {
             @Override
             public boolean onLongClick(View v) {
                 SetStatusView("123456789012");
+                sendMessage("5");
                 return false;
             }
         });
@@ -104,32 +127,8 @@ public class RfidActivity extends AppCompatActivity {
             }
         });
 
+        initBluetooth();
     }
-
-    private BluetoothCallback bluetoothCallback = new BluetoothCallback() {
-        @Override
-        public void onBluetoothTurningOn() {
-        }
-
-        @Override
-        public void onBluetoothTurningOff() {
-        }
-
-        @Override
-        public void onBluetoothOff() {
-        }
-
-        @Override
-        public void onBluetoothOn() {
-            // doStuffWhenBluetoothOn() ...
-
-        }
-
-        @Override
-        public void onUserDeniedActivation() {
-            // handle activation denial...
-        }
-    };
 
     public static void OpenDrawer() {
         if (!drawerLayout.isDrawerOpen(GravityCompat.START))
@@ -323,6 +322,52 @@ public class RfidActivity extends AppCompatActivity {
         ActivityCompat.finishAffinity(this);
     }
 
+    //블루투스 초기화
+    private void initBluetooth() {
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter == null) {
+            showErrorDialog("This device is not implement Bluetooth.");
+            return;
+        }
+
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(intent, REQUEST_BLUETOOTH_ENABLE);
+        }
+        else {
+            Log.d(TAG, "Initialisation successful.");
+            showPairedDevicesListDialog(1);
+        }
+    }
+
+    private void btConnectFunction(){
+        //Glide.with(MainActivity.this).load(R.drawable.gentledog).into(gifImage);
+    }
+    private void setAnimationImage(int power){
+        Log.d(TAG, "power input : " + Integer.toString(power));
+
+        if(power <= 30){
+            if(((temp_power > power) && (temp_power > 30)) || initial_power == 1){
+
+            }
+
+        }
+        else if((power > 30) && (power <= 60)){
+            if(((temp_power < power) && (temp_power <= 30)) || (temp_power > power) && (temp_power > 60)){
+
+            }
+
+        }
+        else if((power > 60) && (power <= 100)){
+            if((temp_power < power) && (temp_power <= 60)){
+
+            }
+
+        }
+        initial_power = 0;
+        temp_power = power;
+    }
+
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -332,28 +377,309 @@ public class RfidActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        /*
-        bluetooth.onStart();
-        if (bluetooth.isEnabled()) {
-            // doStuffWhenBluetoothOn() ...
-        } else {
-            bluetooth.showEnableDialog(RfidActivity.this);
+    private class ConnectTask extends AsyncTask<Void, Void, Boolean> {
+
+        private BluetoothSocket mBluetoothSocket = null;
+        private BluetoothDevice mBluetoothDevice = null;
+
+        ConnectTask(BluetoothDevice bluetoothDevice) {
+            mBluetoothDevice = bluetoothDevice;
+            mConnectedDeviceName = bluetoothDevice.getName();
+
+            //SPP
+            UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+            try {
+                mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(uuid);
+                Log.d( TAG, "create socket for "+mConnectedDeviceName);
+            } catch (IOException e) {
+                Log.e(TAG, "socket create failed " + e.getMessage());
+            }
         }
-         */
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // Always cancel discovery because it will slow down a connection
+            mBluetoothAdapter.cancelDiscovery();
+            // Make a connection to the BluetoothSocket
+            try {
+                mBluetoothSocket.connect();
+            } catch (IOException e) {
+                try {
+                    //btConnectFunction();
+                    mBluetoothSocket.close();
+                } catch (IOException e2) {
+                    Log.e(TAG, "unable to close() " +
+                            " socket during connection failure", e2);
+                }
+                return false;
+            }
+            return true;
+        }
+
+
+        @Override
+        protected void onPostExecute(Boolean isSucess) {
+            if ( isSucess ) {
+                connected(mBluetoothSocket);
+            }
+            else{
+                btConnectFunction();
+                isConnectionError = true;
+                Log.d( TAG,  "Unable to connect device");
+                bluetoothDialog.dismiss();
+                Toast.makeText(RfidActivity.this, "블루투스 연결에 실패하였습니다", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        //bluetooth.onStop();
+
+    public void connected( BluetoothSocket socket ) {
+        mConnectedTask = new ConnectedTask(socket);
+        mConnectedTask.execute();
     }
+
+    private class ConnectedTask extends AsyncTask<Void, String, Boolean> {
+        private InputStream mInputStream = null;
+        private OutputStream mOutputStream = null;
+        private BluetoothSocket mBluetoothSocket = null;
+
+        ConnectedTask(BluetoothSocket socket){
+            mBluetoothSocket = socket;
+            try {
+                mInputStream = mBluetoothSocket.getInputStream();
+                mOutputStream = mBluetoothSocket.getOutputStream();
+            } catch (IOException e) {
+                Log.e(TAG, "socket not created", e );
+            }
+            Log.d( TAG, "connected to "+mConnectedDeviceName);
+            bluetoothDialog.dismiss();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            byte [] readBuffer = new byte[1024];
+            int readBufferPosition = 0;
+            while (true) {
+                if ( isCancelled() ) return false;
+                try {
+                    int bytesAvailable = mInputStream.available();
+                    if(bytesAvailable > 0) {
+                        byte[] packetBytes = new byte[bytesAvailable];
+                        mInputStream.read(packetBytes);
+                        for(int i=0;i<bytesAvailable;i++) {
+                            byte b = packetBytes[i];
+                            if(b == '\n')
+                            {
+                                byte[] encodedBytes = new byte[readBufferPosition];
+                                System.arraycopy(readBuffer, 0, encodedBytes, 0,
+                                        encodedBytes.length);
+                                String recvMessage = new String(encodedBytes, "UTF-8");
+                                readBufferPosition = 0;
+                                Log.d(TAG, "recv message: " + recvMessage);
+                                publishProgress(recvMessage);
+                            }
+                            else
+                            {
+                                readBuffer[readBufferPosition++] = b;
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "disconnected", e);
+                    return false;
+                }
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(String... recvMessage) {
+            try {
+                recvMessage[0] = recvMessage[0].replaceAll("\\n", "");
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            try {
+                recvMessage[0] = recvMessage[0].replaceAll("\\r", "");
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            try {
+                pulling_power = Integer.parseInt(recvMessage[0]);
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            setAnimationImage(pulling_power);
+            //mConversationArrayAdapter.insert(mConnectedDeviceName + ": " + recvMessage[0], 0);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean isSucess) {
+            super.onPostExecute(isSucess);
+            if ( !isSucess ) {
+                btConnectFunction();
+                closeSocket();
+                Log.d(TAG, "Device connection was lost");
+                isConnectionError = true;
+                showErrorDialog("Device connection was lost");
+            }
+        }
+
+        @Override
+        protected void onCancelled(Boolean aBoolean) {
+            super.onCancelled(aBoolean);
+            btConnectFunction();
+            closeSocket();
+        }
+
+        void closeSocket(){
+            try {
+                if(mBluetoothSocket != null)
+                    mBluetoothSocket.close();
+                Log.d(TAG, "close socket()");
+
+            } catch (IOException e2) {
+
+                Log.e(TAG, "unable to close() " +
+                        " socket during connection failure", e2);
+            }
+        }
+
+        void write(String msg){
+            msg += "\n";
+            try {
+                mOutputStream.write(msg.getBytes());
+                mOutputStream.flush();
+            } catch (IOException e) {
+                Log.e(TAG, "Exception during send", e );
+            }
+        }
+    }
+
+
+    //블루투스 페어링 리스트 출력
+    public void showPairedDevicesListDialog(int flag)
+    {
+        Log.d(TAG, "showPaired Devices List");
+        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+        final BluetoothDevice[] pairedDevices = devices.toArray(new BluetoothDevice[0]);
+
+        if ( pairedDevices.length == 0 ){
+            showQuitDialog( "No devices have been paired.\n"
+                    +"You must pair it with another device.");
+            return;
+        }
+
+        String[] items;
+        items = new String[pairedDevices.length];
+
+        if( flag == 0) {
+            String Dev_name, Dev_addr;
+            sharedPreferences = getSharedPreferences("bt", MODE_PRIVATE);
+            Dev_name = sharedPreferences.getString("dev_name", "");
+            Dev_addr = sharedPreferences.getString("dev_addr", "");
+
+            for (int i = 0; i < pairedDevices.length; i++) {
+                items[i] = pairedDevices[i].getName();
+                if (Dev_name.equals(items[i]) && Dev_addr.equals(pairedDevices[i].getAddress())) {
+                    ConnectTask task = new ConnectTask(pairedDevices[i]);
+                    task.execute();
+                    return;
+                }
+            }
+        }
+        else if( flag == 1){
+            for (int i = 0; i < pairedDevices.length; i++) {
+                items[i] = pairedDevices[i].getName();
+            }
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select device");
+        builder.setCancelable(false);
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                sharedPreferences = getSharedPreferences("bt", MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("dev_addr", pairedDevices[which].getAddress());
+                editor.putString("dev_name", pairedDevices[which].getName());
+                bluetoothDialog=new ProgressDialog(RfidActivity.this);
+                bluetoothDialog.setMessage("블루투스 연결중입니다");
+                bluetoothDialog.setCancelable(false);
+                bluetoothDialog.show();
+                editor.commit();
+                ConnectTask task = new ConnectTask(pairedDevices[which]);
+                task.execute();
+            }
+        });
+        builder.create().show();
+    }
+
+
+
+    public void showErrorDialog(String message)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Quit");
+        builder.setCancelable(false);
+        builder.setMessage(message);
+        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                if ( isConnectionError  ) {
+                    isConnectionError = false;
+                    //finish();
+
+                }
+            }
+        });
+        builder.create().show();
+    }
+
+
+    public void showQuitDialog(String message)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Quit");
+        builder.setCancelable(false);
+        builder.setMessage(message);
+        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                finish();
+            }
+        });
+        builder.create().show();
+    }
+
+    //메세지 전송
+    void sendMessage(String msg){
+        if ( mConnectedTask != null ) {
+            mConnectedTask.write(msg);
+            Log.d(TAG, "send message: " + msg);
+            //mConversationArrayAdapter.insert("Me:  " + msg, 0);
+        }
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        //bluetooth.onActivityResult(requestCode, resultCode);
+
+        if(requestCode == REQUEST_BLUETOOTH_ENABLE){
+            if (resultCode == RESULT_OK){
+                //BlueTooth is now Enabled
+                showPairedDevicesListDialog(0);
+            }
+            if(resultCode == RESULT_CANCELED){
+                showQuitDialog( "You need to enable bluetooth");
+            }
+        }
     }
 }
