@@ -299,10 +299,10 @@ public class RfidActivity extends AppCompatActivity {
                     //모든 상태가 현재 상태와 일치할 경우
                     if (response.body().getResult().equals("OK")) {
                         Log.d(tag, "도어락 잠금");
-                        sendMessage("Lock");
+                        sendMessage("0");
                     } else {    //상태가 일치하지 않을 경우
                         Log.d(tag, "도어락 열기");
-                        sendMessage("Open");
+                        sendMessage("1");
                     }
                 }
             }
@@ -434,16 +434,14 @@ public class RfidActivity extends AppCompatActivity {
                 Log.e(TAG, "socket not created", e);
             }
             Log.d(TAG, "connected to " + mConnectedDeviceName);
-
             bluetoothDialog.dismiss();
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
+            sendMessage("999");
             //메세지 수신 대기
             Log.d(TAG, "메세지 수신 대기중");
-            byte[] readBuffer = new byte[1024];
-            int readBufferPosition = 0;
             while (true) {
                 if (isCancelled()) {
                     Log.e(TAG, "수신 취소");
@@ -459,10 +457,15 @@ public class RfidActivity extends AppCompatActivity {
                         String line = "";
                         while ((line = br.readLine()) != null) {
                             Log.d("message", line);
-                            String recvMessage = line;
-                            SetStatusView(recvMessage);
-                            publishProgress(recvMessage);
+                            if(line.contains("nect")) {
+                            } else {
+                                Log.d("message", line);
+                                String recvMessage = line;
+                                SetStatusView(recvMessage);
+                                publishProgress(recvMessage);
+                            }
                         }
+                        br.close();
 
                     }
                 } catch (IOException e) {
