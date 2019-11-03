@@ -84,9 +84,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     Intent RfidIntent;
+
     //위치 정보 확인하기
     private void GetLocation() {
-        RfidIntent=new Intent(this, RfidActivity.class);
+        RfidIntent = new Intent(this, RfidActivity.class);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -105,10 +106,10 @@ public class MainActivity extends AppCompatActivity {
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
             try {
+                //위경도를 주소로 변환
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 10);
                 if (addresses != null && addresses.size() != 0) {
-                    String addr = addresses.get(0).getAddressLine(0);
-                    addr.replace("대한민국 ", "");
+                    String addr = addresses.get(0).getAddressLine(0).replace("대한민국 ", "");
                     RfidIntent.putExtra("address", addr);
                     locationPb.setVisibility(View.GONE);
                     locationTv.setText(addr);

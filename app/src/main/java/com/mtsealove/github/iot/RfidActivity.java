@@ -34,9 +34,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -63,7 +61,7 @@ public class RfidActivity extends AppCompatActivity {
     private static final String TAG = "BluetoothClient";
     int temp_power = 0;
     int initial_power = 1;
-    int pulling_power=0;
+    int pulling_power = 0;
 
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
@@ -96,24 +94,6 @@ public class RfidActivity extends AppCompatActivity {
         account = (Account) getIntent().getSerializableExtra("account");
         GetLocation();
 
-        messageIv.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                SetStatusView("123456789012");
-                sendMessage("5");
-                return false;
-            }
-        });
-
-        /*
-        bluetooth = new Bluetooth(this);
-        bluetooth.setBluetoothCallback(bluetoothCallback);
-//        bluetooth.startScanning();
-        //List<BluetoothDevice> devices = bluetooth.getPairedDevices();
-
-//        bluetooth.connectToName("TEST");
-        bluetooth.send(new byte[]{61, 62, 63});
-         */
         homeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -128,6 +108,24 @@ public class RfidActivity extends AppCompatActivity {
         });
 
         initBluetooth();
+
+        /*
+        Handler handler=new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                SetStatusView("123456789012");
+            }
+        }, 2000);
+         */
+
+        messageIv.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                sendMessage("test");
+                return false;
+            }
+        });
     }
 
     public static void OpenDrawer() {
@@ -199,10 +197,16 @@ public class RfidActivity extends AppCompatActivity {
 
     //RFID로 송장 번호를 입력했을 때 화면에 표시
     private void SetStatusView(String invoice) {
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setCancelable(false);
-        progressDialog.setMessage("화물 정보를 받아오는 중입니다");
-        progressDialog.show();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                progressDialog = new ProgressDialog(RfidActivity.this);
+                progressDialog.setCancelable(false);
+                progressDialog.setMessage("화물 정보를 받아오는 중입니다");
+                progressDialog.show();
+            }
+        });
+
         RestApi restApi = new RestApi(this);
         Call<AItem> call = restApi.getRetrofitService().GetAItem(invoice);
         call.enqueue(new Callback<AItem>() {
@@ -242,14 +246,20 @@ public class RfidActivity extends AppCompatActivity {
         }
     }
 
-    private void SetResult(AItem aItem) {
-        //하단 표시
-        aItemView.SetItem(aItem);
-        //상단 표시
-        titleTv.setText("RFID 태그 성공");
-        messageTv.setText(StatusMap.GetStatus(status) + " 완료");
-        Drawable drawable = getDrawable(R.drawable.icon_checked);
-        messageIv.setImageDrawable(drawable);
+    //결과를 화면에 표시
+    private void SetResult(final AItem aItem) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //하단 표시
+                aItemView.SetItem(aItem);
+                //상단 표시
+                titleTv.setText("RFID 태그 성공");
+                messageTv.setText(StatusMap.GetStatus(status) + " 완료");
+                Drawable drawable = getDrawable(R.drawable.icon_checked);
+                messageIv.setImageDrawable(drawable);
+            }
+        });
     }
 
     //화물 상태 업데이트
@@ -288,11 +298,11 @@ public class RfidActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     //모든 상태가 현재 상태와 일치할 경우
                     if (response.body().getResult().equals("OK")) {
-                        Log.d(tag, "도어락 오픈");
-                        //sendData("Open");
-                    } else {    //상태가 일치하지 않을 경우
                         Log.d(tag, "도어락 잠금");
-                        //sendData("Lock");
+                        sendMessage("Lock");
+                    } else {    //상태가 일치하지 않을 경우
+                        Log.d(tag, "도어락 열기");
+                        sendMessage("Open");
                     }
                 }
             }
@@ -333,40 +343,12 @@ public class RfidActivity extends AppCompatActivity {
         if (!mBluetoothAdapter.isEnabled()) {
             Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(intent, REQUEST_BLUETOOTH_ENABLE);
-        }
-        else {
+        } else {
             Log.d(TAG, "Initialisation successful.");
             showPairedDevicesListDialog(1);
         }
     }
 
-    private void btConnectFunction(){
-        //Glide.with(MainActivity.this).load(R.drawable.gentledog).into(gifImage);
-    }
-    private void setAnimationImage(int power){
-        Log.d(TAG, "power input : " + Integer.toString(power));
-
-        if(power <= 30){
-            if(((temp_power > power) && (temp_power > 30)) || initial_power == 1){
-
-            }
-
-        }
-        else if((power > 30) && (power <= 60)){
-            if(((temp_power < power) && (temp_power <= 30)) || (temp_power > power) && (temp_power > 60)){
-
-            }
-
-        }
-        else if((power > 60) && (power <= 100)){
-            if((temp_power < power) && (temp_power <= 60)){
-
-            }
-
-        }
-        initial_power = 0;
-        temp_power = power;
-    }
 
     @Override
     public void onBackPressed() {
@@ -390,7 +372,7 @@ public class RfidActivity extends AppCompatActivity {
             UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
             try {
                 mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(uuid);
-                Log.d( TAG, "create socket for "+mConnectedDeviceName);
+                Log.d(TAG, "create socket for " + mConnectedDeviceName);
             } catch (IOException e) {
                 Log.e(TAG, "socket create failed " + e.getMessage());
             }
@@ -398,14 +380,11 @@ public class RfidActivity extends AppCompatActivity {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // Always cancel discovery because it will slow down a connection
             mBluetoothAdapter.cancelDiscovery();
-            // Make a connection to the BluetoothSocket
             try {
                 mBluetoothSocket.connect();
             } catch (IOException e) {
                 try {
-                    //btConnectFunction();
                     mBluetoothSocket.close();
                 } catch (IOException e2) {
                     Log.e(TAG, "unable to close() " +
@@ -418,14 +397,14 @@ public class RfidActivity extends AppCompatActivity {
 
 
         @Override
-        protected void onPostExecute(Boolean isSucess) {
-            if ( isSucess ) {
+        protected void onPostExecute(Boolean isSuccess) {
+            //연결 성공 시
+            if (isSuccess) {
                 connected(mBluetoothSocket);
-            }
-            else{
-                btConnectFunction();
+            } else {
+                //연결 실패 시
                 isConnectionError = true;
-                Log.d( TAG,  "Unable to connect device");
+                Log.d(TAG, "Unable to connect device");
                 bluetoothDialog.dismiss();
                 Toast.makeText(RfidActivity.this, "블루투스 연결에 실패하였습니다", Toast.LENGTH_SHORT).show();
             }
@@ -433,56 +412,58 @@ public class RfidActivity extends AppCompatActivity {
     }
 
 
-    public void connected( BluetoothSocket socket ) {
+    //연결이 성공했을 때 실행할 메서드
+    public void connected(BluetoothSocket socket) {
         mConnectedTask = new ConnectedTask(socket);
         mConnectedTask.execute();
     }
 
+    //연결 성공 후 수행할 메서드
     private class ConnectedTask extends AsyncTask<Void, String, Boolean> {
         private InputStream mInputStream = null;
         private OutputStream mOutputStream = null;
         private BluetoothSocket mBluetoothSocket = null;
 
-        ConnectedTask(BluetoothSocket socket){
+        ConnectedTask(BluetoothSocket socket) {
+            //소켓 생성
             mBluetoothSocket = socket;
             try {
                 mInputStream = mBluetoothSocket.getInputStream();
                 mOutputStream = mBluetoothSocket.getOutputStream();
             } catch (IOException e) {
-                Log.e(TAG, "socket not created", e );
+                Log.e(TAG, "socket not created", e);
             }
-            Log.d( TAG, "connected to "+mConnectedDeviceName);
+            Log.d(TAG, "connected to " + mConnectedDeviceName);
+
             bluetoothDialog.dismiss();
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            byte [] readBuffer = new byte[1024];
+            //메세지 수신 대기
+            Log.d(TAG, "메세지 수신 대기중");
+            byte[] readBuffer = new byte[1024];
             int readBufferPosition = 0;
             while (true) {
-                if ( isCancelled() ) return false;
+                if (isCancelled()) {
+                    Log.e(TAG, "수신 취소");
+                    return false;
+                }
                 try {
                     int bytesAvailable = mInputStream.available();
-                    if(bytesAvailable > 0) {
+                    if (bytesAvailable > 0) {
                         byte[] packetBytes = new byte[bytesAvailable];
                         mInputStream.read(packetBytes);
-                        for(int i=0;i<bytesAvailable;i++) {
-                            byte b = packetBytes[i];
-                            if(b == '\n')
-                            {
-                                byte[] encodedBytes = new byte[readBufferPosition];
-                                System.arraycopy(readBuffer, 0, encodedBytes, 0,
-                                        encodedBytes.length);
-                                String recvMessage = new String(encodedBytes, "UTF-8");
-                                readBufferPosition = 0;
-                                Log.d(TAG, "recv message: " + recvMessage);
-                                publishProgress(recvMessage);
-                            }
-                            else
-                            {
-                                readBuffer[readBufferPosition++] = b;
-                            }
+                        //버퍼 형식으로 수신받은 byte 변환
+                        BufferedReader br = new BufferedReader(new InputStreamReader(mInputStream));
+                        String line = "";
+                        while ((line = br.readLine()) != null) {
+                            Log.d("message", line);
+                            String recvMessage = line;
+                            SetStatusView(recvMessage);
+                            publishProgress(recvMessage);
                         }
+
                     }
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
@@ -495,32 +476,20 @@ public class RfidActivity extends AppCompatActivity {
         protected void onProgressUpdate(String... recvMessage) {
             try {
                 recvMessage[0] = recvMessage[0].replaceAll("\\n", "");
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             try {
                 recvMessage[0] = recvMessage[0].replaceAll("\\r", "");
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-            try {
-                pulling_power = Integer.parseInt(recvMessage[0]);
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-            setAnimationImage(pulling_power);
-            //mConversationArrayAdapter.insert(mConnectedDeviceName + ": " + recvMessage[0], 0);
         }
 
         @Override
         protected void onPostExecute(Boolean isSucess) {
             super.onPostExecute(isSucess);
-            if ( !isSucess ) {
-                btConnectFunction();
+            if (!isSucess) {
                 closeSocket();
                 Log.d(TAG, "Device connection was lost");
                 isConnectionError = true;
@@ -531,13 +500,12 @@ public class RfidActivity extends AppCompatActivity {
         @Override
         protected void onCancelled(Boolean aBoolean) {
             super.onCancelled(aBoolean);
-            btConnectFunction();
             closeSocket();
         }
 
-        void closeSocket(){
+        void closeSocket() {
             try {
-                if(mBluetoothSocket != null)
+                if (mBluetoothSocket != null)
                     mBluetoothSocket.close();
                 Log.d(TAG, "close socket()");
 
@@ -548,35 +516,34 @@ public class RfidActivity extends AppCompatActivity {
             }
         }
 
-        void write(String msg){
+        void write(String msg) {
             msg += "\n";
             try {
                 mOutputStream.write(msg.getBytes());
                 mOutputStream.flush();
             } catch (IOException e) {
-                Log.e(TAG, "Exception during send", e );
+                Log.e(TAG, "Exception during send", e);
             }
         }
     }
 
 
     //블루투스 페어링 리스트 출력
-    public void showPairedDevicesListDialog(int flag)
-    {
+    public void showPairedDevicesListDialog(int flag) {
         Log.d(TAG, "showPaired Devices List");
         Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
         final BluetoothDevice[] pairedDevices = devices.toArray(new BluetoothDevice[0]);
 
-        if ( pairedDevices.length == 0 ){
-            showQuitDialog( "No devices have been paired.\n"
-                    +"You must pair it with another device.");
+        if (pairedDevices.length == 0) {
+            showQuitDialog("No devices have been paired.\n"
+                    + "You must pair it with another device.");
             return;
         }
 
         String[] items;
         items = new String[pairedDevices.length];
 
-        if( flag == 0) {
+        if (flag == 0) {
             String Dev_name, Dev_addr;
             sharedPreferences = getSharedPreferences("bt", MODE_PRIVATE);
             Dev_name = sharedPreferences.getString("dev_name", "");
@@ -590,15 +557,15 @@ public class RfidActivity extends AppCompatActivity {
                     return;
                 }
             }
-        }
-        else if( flag == 1){
+        } else if (flag == 1) {
             for (int i = 0; i < pairedDevices.length; i++) {
                 items[i] = pairedDevices[i].getName();
             }
         }
 
+        //기기 선택 다이얼로그 생성
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select device");
+        builder.setTitle("기기 선택");
         builder.setCancelable(false);
         builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
@@ -608,7 +575,8 @@ public class RfidActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("dev_addr", pairedDevices[which].getAddress());
                 editor.putString("dev_name", pairedDevices[which].getName());
-                bluetoothDialog=new ProgressDialog(RfidActivity.this);
+                //
+                bluetoothDialog = new ProgressDialog(RfidActivity.this);
                 bluetoothDialog.setMessage("블루투스 연결중입니다");
                 bluetoothDialog.setCancelable(false);
                 bluetoothDialog.show();
@@ -621,18 +589,16 @@ public class RfidActivity extends AppCompatActivity {
     }
 
 
-
-    public void showErrorDialog(String message)
-    {
+    public void showErrorDialog(String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Quit");
         builder.setCancelable(false);
         builder.setMessage(message);
-        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                if ( isConnectionError  ) {
+                if (isConnectionError) {
                     isConnectionError = false;
                     //finish();
 
@@ -643,13 +609,12 @@ public class RfidActivity extends AppCompatActivity {
     }
 
 
-    public void showQuitDialog(String message)
-    {
+    public void showQuitDialog(String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Quit");
         builder.setCancelable(false);
         builder.setMessage(message);
-        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
@@ -660,11 +625,13 @@ public class RfidActivity extends AppCompatActivity {
     }
 
     //메세지 전송
-    void sendMessage(String msg){
-        if ( mConnectedTask != null ) {
+    void sendMessage(String msg) {
+        if (mConnectedTask != null) {
             mConnectedTask.write(msg);
             Log.d(TAG, "send message: " + msg);
             //mConversationArrayAdapter.insert("Me:  " + msg, 0);
+        } else {
+            Log.e(TAG, "메세지 전송 불가");
         }
     }
 
@@ -672,13 +639,13 @@ public class RfidActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if(requestCode == REQUEST_BLUETOOTH_ENABLE){
-            if (resultCode == RESULT_OK){
+        if (requestCode == REQUEST_BLUETOOTH_ENABLE) {
+            if (resultCode == RESULT_OK) {
                 //BlueTooth is now Enabled
                 showPairedDevicesListDialog(0);
             }
-            if(resultCode == RESULT_CANCELED){
-                showQuitDialog( "You need to enable bluetooth");
+            if (resultCode == RESULT_CANCELED) {
+                showQuitDialog("You need to enable bluetooth");
             }
         }
     }

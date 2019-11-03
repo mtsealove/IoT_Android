@@ -51,7 +51,11 @@ public class AItemView extends LinearLayout {
         this.aItem = aItem;
         nameTv.setText("상품명: "+aItem.getItemName());
         invoiceTv.setText("송장번호: "+aItem.getInvoiceNum());
-        statusTv.setText("상태: "+StatusMap.GetStatus(Integer.parseInt(aItem.getStatus())));
+        try{
+            statusTv.setText("상태: "+StatusMap.GetStatus(Integer.parseInt(aItem.getStatus())));
+        } catch (Exception e){
+
+        }
         stAddrTv.setText("출발주소: "+aItem.getStAddress());
         dstAddrTv.setText("도착주소: "+aItem.getDstAddress());
     }

@@ -53,9 +53,15 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
     public int onStartCommand(Intent intent, int flags, int startId) {  //서비스가 시작될 때
         account = (Account) intent.getSerializableExtra("account"); //계정 정보 받아오기
         driver_id = account.getID();
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(UpdateLocationService.this)   //알림 만들기
+                .setContentTitle("IoT 물류추적 서비스") //제목
+                .setContentText("현재 운행중입니다")  //내용
+                .setSmallIcon(R.drawable.app_logo_no_background) //아이콘 설정
+                .setOngoing(true);  //상단바에 띄우기
         if (Build.VERSION.SDK_INT > 26)
-            CreateNotificationHigh();   //노티 만들기
-        else CreateNotificationLow();
+            CreateNotificationHigh(notificationBuilder);   //노티 만들기
+        else CreateNotificationLow(notificationBuilder);
 
         restApi = new RestApi(getBaseContext());
         //위치정보 갱신 활성화
@@ -72,7 +78,7 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)   //안드로이드 8.0이상에서 작동
-    public void CreateNotificationHigh() {  //알림 만들기
+    public void CreateNotificationHigh(NotificationCompat.Builder notificationBuilder) {  //알림 만들기
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);    //노티(알림) 매니저
         String channelId = "notify";  //채널 ID
         CharSequence channelName = "알림";  //채널 이름
@@ -83,30 +89,12 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
         notificationChannel.setDescription(description);    //채널 설명 설정
         notificationManager.createNotificationChannel(notificationChannel); //채널 생성
 
-        Intent intent = new Intent(UpdateLocationService.this, LoginActivity.class);   //메인 액티비티로 가는 인텐트(화면 전환 객체)
-        PendingIntent pendingIntent = PendingIntent.getActivity(UpdateLocationService.this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT); //펜딩 인텐트, 알림을 클릭하면 위의 인텐트 실행
-
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(UpdateLocationService.this)   //알림 만들기
-                .setContentTitle("IoT 물류추적 서비스") //제목
-                .setContentText("현재 운행중입니다")  //내용
-                .setChannelId("notify") //채널 ID를 기반으로 위에서 만든 채널을 할당
-                .setSmallIcon(R.drawable.app_logo_no_background) //아이콘 설정
-                //.setContentIntent(pendingIntent)    //클릭시 메인으로 가는 인텐트 설정
-                .setOngoing(true);  //상단바에 띄우기
+        notificationBuilder.setChannelId("notify"); //채널 ID를 기반으로 위에서 만든 채널을 할당
         notification = notificationBuilder.build();   //실제 노티 빌드
         startForeground(001, notification); //항상 실행
     }
 
-    public void CreateNotificationLow() {   //안드로이드 8.0 미만에서 작동
-        Intent intent = new Intent(UpdateLocationService.this, LoginActivity.class);   //메인 액티비티로 가는 인텐트(화면 전환 객체)
-        PendingIntent pendingIntent = PendingIntent.getActivity(UpdateLocationService.this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT); //펜딩 인텐트, 알림을 클릭하면 위의 인텐트 실행
-
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(UpdateLocationService.this)   //알림 만들기
-                .setContentTitle("IoT 물류추적 서비스") //제목
-                .setContentText("현재 운행중입니다")  //내용
-                .setSmallIcon(R.drawable.app_logo_no_background) //아이콘 설정
-                // .setContentIntent(pendingIntent)    //클릭시 메인으로 가는 인텐트 설정
-                .setOngoing(true);  //상단바에 띄우기
+    public void CreateNotificationLow(NotificationCompat.Builder notificationBuilder) {   //안드로이드 8.0 미만에서 작동
         notification = notificationBuilder.build();   //실제 노티 빌드
         startForeground(001, notification); //항상 실행
     }
@@ -117,7 +105,7 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
     //위치 정보 확인하기
     @SuppressLint("MissingPermission")
     private void GetLocation() {
-        Log.d(tag, "서비스 시작");
+        Log.d(tag, "위치추적 서비스 시작");
         locationManager = (LocationManager) getBaseContext().getSystemService(Context.LOCATION_SERVICE);
         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         //5분에 한 번씩, 10m마다 한번씩 위치 정보 업데이트
@@ -133,14 +121,11 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
 
-            Log.d(tag, "제공자: " + provider + "위도: " + latitude + "경도: " + longitude);
-
             try {
                 List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 10);
                 if (addresses != null && addresses.size() != 0) {
                     String addr = addresses.get(0).getAddressLine(0);
                     addr.replace("대한민국 ", "");
-                    Log.d(tag, addr);
                     UpdateLocation(addr);
                 }
             } catch (IOException e) {
@@ -163,7 +148,6 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
 
     //데이터베이스에 위치정보 업데이트
     private void UpdateLocation(final String address) {
-        Log.d(tag, "address: "+address);
         RequestAddress requestAddress = new RequestAddress(driver_id, address);
         Call<RestResult> call = restApi.getRetrofitService().UpdateLocation(requestAddress);
         call.enqueue(new Callback<RestResult>() {
@@ -171,6 +155,8 @@ public class UpdateLocationService extends Service {    //백그라운드에서 
             public void onResponse(Call<RestResult> call, Response<RestResult> response) {
                 if (response.isSuccessful() && response.body().getResult().equals("OK")) {
                     Log.d(tag, "위치정보 업데이트: " + address);
+                } else{
+                    Log.e(tag, "위치정보 업데이트 실패");
                 }
             }
 
